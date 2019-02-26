@@ -1,3 +1,4 @@
+const _ = require('lodash');
 var express = require('express');
 var bodyParser = require('body-parser');
 const {ObjectID} = require('mongodb');
@@ -48,6 +49,7 @@ app.get('/todos/:id' , (req,res) => {
 
 });
 
+
 app.delete('/todos/:id', (req,res) => {
   var id = req.params.id;
 
@@ -61,6 +63,34 @@ app.delete('/todos/:id', (req,res) => {
     }
     res.send({todo : todo});
   }).catch((e) => res.status(400).send());
+});
+
+app.patch('/todos/:id', (req, res) => {
+  var id = req.params.id;
+  var bod = _.pick(req.body, ['text', 'completed']);
+
+  if(!ObjectID.isValid(id)){
+    return res.status(404).send();
+  }
+
+  if( _.isBoolean(bod.completed) && bod.completed){
+    bod.completedAt = new Date().getTime();
+  } else {
+    bod.completed = false;
+    bod.completedAt = null;
+  }
+  
+//bod is an object with some of the attributes of the Todo collection.
+// When we set {$set : bod}, that updates only the attributes contained in the bod object. Other attributes remain the same.
+  Todo.findByIdAndUpdate(id, {$set : bod}, {new : true}).then((todo) => {
+
+    if(!todo){
+      return res.status(404).send();
+    }
+    res.send({todo : todo});
+
+  }).catch((e) => res.status(400).send());
+
 });
 
 
