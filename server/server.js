@@ -1,3 +1,5 @@
+require('./config/config.js');
+
 const _ = require('lodash');
 var express = require('express');
 var bodyParser = require('body-parser');
@@ -8,7 +10,7 @@ var {Todo} = require('./models/todo.js');
 var {User} = require('./models/user.js');
 
 var app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT;
 
 //this is a middleware which will be used for every request made.
 app.use(bodyParser.json());
@@ -79,7 +81,7 @@ app.patch('/todos/:id', (req, res) => {
     bod.completed = false;
     bod.completedAt = null;
   }
-  
+
 //bod is an object with some of the attributes of the Todo collection.
 // When we set {$set : bod}, that updates only the attributes contained in the bod object. Other attributes remain the same.
   Todo.findByIdAndUpdate(id, {$set : bod}, {new : true}).then((todo) => {
