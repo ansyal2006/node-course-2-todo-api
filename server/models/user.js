@@ -37,6 +37,8 @@ var UserSchema = new mongoose.Schema({
 });
 
 //This is a method which already existed, but is now overridden.
+//toJSON method is used to modify what is sent in the res.send() command. The database saves all the attributes in the collection,
+// while the res.send() command responds with only the (_id and email) of the user. All other attributes are hidden.
 UserSchema.methods.toJSON = function () {
   var user = this;
   var userObject = user.toObject();
@@ -45,6 +47,7 @@ UserSchema.methods.toJSON = function () {
 };
 
 //This is a user-defined custom method.
+//(schema.methods) makes instance methods, that operate over a document/instance of the collection.
 UserSchema.methods.generateAuthToken = function () {
   var user = this;
   var access = 'auth';
@@ -61,6 +64,26 @@ UserSchema.methods.generateAuthToken = function () {
     return token;
   });
 };
+
+//(schema.statics) makes model methods, that operate over the collection/model as a whole.
+UserSchema.statics.findByToken = function (token) {
+  var User = this;
+  var decoded;
+
+  try {
+    decoded = jwt.verify(token , 'abc123');
+  } catch(e) {
+    return Promise.reject();
+  }
+
+  return User.findOne({
+    _id : decoded._id,
+    'tokens.token' : token,
+    'tokens.access' : decoded.access
+  });
+
+};
+
 
 var User = mongoose.model('User', UserSchema );
 

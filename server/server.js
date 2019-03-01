@@ -4,10 +4,12 @@ const _ = require('lodash');
 var express = require('express');
 var bodyParser = require('body-parser');
 const {ObjectID} = require('mongodb');
+const jwt = require('jsonwebtoken');
 
 var {mongoose} = require('./db/mongoose.js');
 var {Todo} = require('./models/todo.js');
 var {User} = require('./models/user.js');
+var {authenticate} = require('./middleware/authenticate.js');
 
 var app = express();
 const port = process.env.PORT;
@@ -103,10 +105,16 @@ app.post('/users',(req, res) => {
   user.save().then(() => {
     return user.generateAuthToken();
   }).then((token) => {
+    // console.log(jwt.verify(token , 'abc123'));
     res.header('x-auth', token).send(user);
   }).catch((e) => {
     res.status(400).send(e);
   });
+});
+
+//Using the authenticate middleware for the GET /users/me route, by passing it as the second argument.
+app.get('/users/me', authenticate ,(req, res) => {
+  res.send(req.user);
 });
 
 
