@@ -1,18 +1,45 @@
 const {SHA256} = require('crypto-js');
 const jwt = require('jsonwebtoken');
-
-var data = {
-  id : 10
-};
-
-var token = jwt.sign(data, '123abc');
-console.log(token);
-
-var decoded = jwt.verify(token, '123abc');
-console.log(decoded);
+const bcrypt = require('bcryptjs');
 
 
+var password = '123abc!';
 
+//bcrypt.genSalt is an asynchronous function, hence it has a callback function as its last argument.
+ // Same is the case with bcrypt.hash function and bcrypt.compare function.
+bcrypt.genSalt(10, (err, salt) =>{
+  bcrypt.hash(password, salt, (err, hash) => {
+    hashedPassword = hash;
+    console.log(hashedPassword);
+    bcrypt.compare(password, hashedPassword, (err, res) => {
+      console.log(res);
+    });
+  });
+});
+
+// //We can also handle bcrypt functions through then() calls as they are all callback functions.
+bcrypt.genSalt(10)
+.then((salt) => {
+  return bcrypt.hash(password, salt);
+})
+.then((hashedPassword) => {
+  return bcrypt.compare(password, hashedPassword);
+})
+.then((res) => console.log(res)).catch((e) => console.log(e));
+
+
+// var data = {
+//   id : 10
+// };
+//
+// var token = jwt.sign(data, '123abc');
+// console.log(token);
+//
+// var decoded = jwt.verify(token, '123abc');
+// console.log(decoded);
+//
+//
+//
 
 // var message = 'I am user number 3';
 // var hash = SHA256(message).toString();
