@@ -5,6 +5,7 @@ var express = require('express');
 var bodyParser = require('body-parser');
 const {ObjectID} = require('mongodb');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 
 var {mongoose} = require('./db/mongoose.js');
 var {Todo} = require('./models/todo.js');
@@ -112,10 +113,52 @@ app.post('/users',(req, res) => {
   });
 });
 
+
+// //The version of route '/users/login' which was made by me.
+// app.post('/users/login', (req, res) => {
+//   var body = _.pick(req.body, ['email', 'password']);
+//   var email = body.email;
+//   var password = body.password;
+//
+//   User.findOne({email})
+//   .then((user) => {
+//     if(!user){
+//       return Promise.reject();
+//     }
+//     console.log(user);
+//     var hashedPassword = user.password;
+//     return Promise.all([user, bcrypt.compare(password, hashedPassword)]);
+//   })
+//   .then((result) => {
+//     console.log(result[1]);
+//       if(result[1]){
+//         res.send(result[0]);
+//       }
+//       else{
+//         res.status(401).send();
+//       }
+//     }).catch((e) => res.status(400).send(e));
+// });
+
+
+//the version of route '/users/login' taught in the course.
+app.post('/users/login' , (req, res) => {
+  var body = _.pick(req.body, ['email', 'password']);
+
+  User.findByCredentials(body.email, body.password).then((user) => {
+    return user.generateAuthToken().then((token) => {
+      res.header('x-auth', token).send(user);
+    });
+  }).catch((e) => res.status(400).send());
+});
+
+
+
 //Using the authenticate middleware for the GET /users/me route, by passing it as the second argument.
 app.get('/users/me', authenticate ,(req, res) => {
   res.send(req.user);
 });
+
 
 
 
@@ -124,28 +167,3 @@ app.listen(port, () => {
 });
 
 module.exports = { app };
-// var newUser = new User({email : '    ansyal2006@gmail.com  '});
-//
-// newUser.save().then((doc) => {
-//   console.log('Saved the user', doc);
-// }, (err) => {
-//   console.log('Unable to save the user', err);
-// });
-
-// var newTodo = new Todo({text : 'Hardwork, Dedication.'});
-
-// newTodo.save().then((doc) => {
-//   console.log('Saved Todo.', doc);
-// }, (err) => {
-//   console.log('Unable to save Todo.',err);
-// });
-
-// var newTodo1 = new Todo({text : 'Hardwork, Dedication.', completed : true, completedAt : 1234});
-
-// var newTodo2 = new Todo({text : '   Hardwork, Dedication.    '});
-//
-// newTodo2.save().then((doc) => {
-//   console.log('Saved Todo.', doc);
-// },(err) =>{
-//   console.log('Unable to save Todo.', err);
-// });

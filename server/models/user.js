@@ -85,6 +85,29 @@ UserSchema.statics.findByToken = function (token) {
 
 };
 
+UserSchema.statics.findByCredentials = function(email, password) {
+  var User = this;
+
+  return User.findOne({email}).then((user) => {
+    if(!user){
+      return Promise.reject();
+    }
+
+    return new Promise((resolve, reject) => {
+      bcrypt.compare(password , user.password , (err, res) => {
+        if(res){
+          resolve(user);
+        }
+        else{
+          reject();
+        }
+      });
+    });
+
+  });
+};
+
+
 //Using mongoose middleware, which acts very similar to the express middleware,
 // we modify the user document before it is saved to the database.We hash the password and save the hashedPassword in the database.
 UserSchema.pre('save', function (next) {
