@@ -152,13 +152,20 @@ app.post('/users/login' , (req, res) => {
   }).catch((e) => res.status(400).send());
 });
 
-
+//Logging out route, it deletes the saved token in the process - the token to be deleted is passed in the authenticate middleware
+//the token deleted was used sometime in the past to signup/login by the user.
+app.delete('/users/me/token', authenticate , (req, res) => {
+  var user = req.user;
+  var token = req.token;
+  user.removeToken(token).then(() => {
+    res.status(200).send();
+  }, (err) => res.status(400).send());
+});
 
 //Using the authenticate middleware for the GET /users/me route, by passing it as the second argument.
 app.get('/users/me', authenticate ,(req, res) => {
   res.send(req.user);
 });
-
 
 
 
