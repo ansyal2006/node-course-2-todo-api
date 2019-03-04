@@ -1,11 +1,13 @@
 const expect = require('expect');
 const request = require('supertest');
 const {ObjectID} = require('mongodb');
+const bcrypt = require('bcryptjs');
 
 const {app} = require('./../server.js');
 const {Todo} = require('./../models/todo.js');
 const {User} = require('./../models/user.js');
 const {todos, populateTodos, users, populateUsers} = require('./seed/seed.js');
+
 
 beforeEach(populateUsers);
 beforeEach(populateTodos);
@@ -216,7 +218,7 @@ describe('POST /users', () => {
         expect(user).toBeTruthy();
         expect(user.password).not.toBe(password);
         done();
-      });
+      }).catch((e) => done(e));
     });
   });
 
@@ -240,5 +242,83 @@ describe('POST /users', () => {
     .expect(400)
     .end(done);
   });
+
+});
+
+describe('POST /users/login', () => {
+
+  it('should login user and return auth token', (done) => {
+    var user = users[1];
+
+    request(app)
+    .post('/users/login')
+    .send(user)
+    .expect(200)
+    .expect((res) => {
+      expect(res.body.email).toBe(user.email);
+      expect(res.header['x-auth']).toBeTruthy();
+      expect(res.body._id).toBeTruthy();
+    })
+    .end((err, res) => {
+      if(err){
+        return done(err);
+      }
+      User.findById(res.body._id).then((user1) => {
+        expect(user1).toBeTruthy();
+
+        //we couldn't use toMatchObject directly on whole of the user1.tokens array as there was also a property _id for every element in the tokens array.
+        //Although we could use user1.tokens[0] property.
+        //Better alternative is written below this code
+        expect(user1.tokens[0]).toMatchObject({
+          access : 'auth',
+          token : res.header['x-auth'].toString()
+        });
+
+        //Better Alternative
+        //expecting user1.tokens to be equal to an array that contains an object that conatins the two properties access and token.
+        expect(user1.tokens).toEqual(expect.arrayContaining([
+          expect.objectContaining({
+            access : 'auth',
+            token : res.header['x-auth'].toString()
+          })
+        ]));
+
+        bcrypt.compare(user.password , user1.password).then((result) => {
+          expect(result).toBeTruthy;
+          done();
+        }).catch((e) => done(e));
+      }).catch((e) => done(e));
+    });
+  });
+
+
+  it('should reject invalid login', (done) => {
+    var user = {email : users[1].email, password : 'dddddddd1244'};
+    request(app)
+    .post('/users/login')
+    .send(user)
+    .expect(400)
+    .expect((res) => {
+      expect(res.body).toEqual({});
+      expect(res.header['x-auth']).not.toBeTruthy();
+    })
+    .end((err, res) => {
+      if(err){
+        return done(err);
+      }
+      User.findOne({email : user.email}).then((user1) => {
+        // expect(user1).not.toBeTruthy();
+
+        expect(user1.tokens.length).toBe(0);
+
+        bcrypt.compare(user.password , user1.password).then((result) => {
+          expect(result).not.toBeTruthy;
+          done();
+        }).catch((e) => done(e));
+
+      }).catch((e) => done(e));
+    });
+  });
+
 
 });
